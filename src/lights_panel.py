@@ -1,5 +1,7 @@
 from collections import defaultdict
-from typing import Dict, List, Optional, Union
+from pathlib import Path
+from typing import Dict, Optional
+
 from PyQt5 import QtCore, QtGui, QtWidgets
 from lifxlan import LifxLAN, Light
 
@@ -39,7 +41,7 @@ class SingleLightWidget(QtWidgets.QWidget):
 
         # TODO: I think this is always on? -- Double-check
         # Power button - Turns light on or off
-        self.power_on_button = QtWidgets.QPushButton(QtGui.QIcon("icons/lightbulb.png"), "")
+        self.power_on_button = QtWidgets.QPushButton(QtGui.QIcon(str(Path(__file__).parent.parent / "icons" / "lightbulb.png")), "")
         self.update_power_button()
         # Slot
         self.power_on_button.clicked.connect(self.change_power)
