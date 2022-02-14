@@ -1,10 +1,19 @@
 from collections import defaultdict
 from pathlib import Path
+import time
 from typing import Dict, Optional
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from lifxlan import LifxLAN, Light
 
+
+def load_icon(icon_name: str):
+    path = Path(__file__).parent.parent / "icons" / f"{icon_name}.png"
+    if not path.exists():
+        raise ValueError(
+            f"Given incorrect icon name. Please see valid names in folder (ignore file extensions): {path.parent}"
+        )
+    return QtGui.QIcon(str(path))
 
 class SingleLightWidget(QtWidgets.QWidget):
     def __init__(self, group: str, name: str, light_handle: Light , *args, **kwargs) -> None:
@@ -31,7 +40,6 @@ class SingleLightWidget(QtWidgets.QWidget):
             self.kelvin_slider.setMaximum(features["max_kelvin"])
             self.kelvin_slider.setTickPosition(QtWidgets.QSlider.TicksBelow)
             self.kelvin_slider.setTickInterval(500)
-            print(self.handle.get_color()[-1])
             self.kelvin_slider.setValue(self.handle.get_color()[-1])
 
             # Slot
@@ -41,7 +49,7 @@ class SingleLightWidget(QtWidgets.QWidget):
 
         # TODO: I think this is always on? -- Double-check
         # Power button - Turns light on or off
-        self.power_on_button = QtWidgets.QPushButton(QtGui.QIcon(str(Path(__file__).parent.parent / "icons" / "lightbulb.png")), "")
+        self.power_on_button = QtWidgets.QPushButton(load_icon("lightbulb"), "")
         self.update_power_button()
         # Slot
         self.power_on_button.clicked.connect(self.change_power)
@@ -104,6 +112,7 @@ class SingleLightWidget(QtWidgets.QWidget):
             f"background-color: {'yellowgreen' if power else 'tomato'};"
         )
 
+QtWidgets.QMainWindow
 
 class LightsPanel(QtWidgets.QWidget):
     def __init__(
@@ -112,6 +121,19 @@ class LightsPanel(QtWidgets.QWidget):
         **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
+
+        self.title = "LifX Control"
+        self.setWindowTitle(self.title)
+        self.setWindowIcon(load_icon("lightbulb"))
+
+        # Tray icon
+        self.tray_icon = QtWidgets.QSystemTrayIcon(load_icon("lightbulb"))
+        self.tray_icon.setToolTip(self.title)
+        self.tray_icon.show()
+        self.last_change_timestamp = 0.0
+
+        # Slot
+        self.tray_icon.activated.connect(self.toggle_visibility)
 
         # Data handling
         self.lan = LifxLAN()
@@ -135,3 +157,20 @@ class LightsPanel(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(lights_list_area)
         self.setLayout(layout)
+
+    def changeEvent(self, event: QtCore.QEvent):
+        self.changing_visibility = True
+        if event.type() == QtCore.QEvent.WindowStateChange and time.time() - self.last_change_timestamp > 0.1:
+            QtCore.QTimer.singleShot(0, self.toggle_visibility)
+        self.changing_visibility = False
+
+    def toggle_visibility(self, activation_reason: Optional[QtWidgets.QSystemTrayIcon.ActivationReason] = None):
+        self.last_change_timestamp = time.time()
+        if activation_reason is None or activation_reason == QtWidgets.QSystemTrayIcon.Trigger:
+            if self.isVisible():
+                self.hide()
+            else:
+                state = QtCore.Qt.WindowStates(QtCore.Qt.WindowActive)
+                state |= not QtCore.Qt.WindowMinimized
+                self.setWindowState(state)
+                self.show()
