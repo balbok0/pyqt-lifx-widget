@@ -1,0 +1,7 @@
+name: lifx-pyqt-widget
+dependencies:
+  - python=3.8
+  - pyqt
+  - pip
+  - pip:
+    - lifxlan
