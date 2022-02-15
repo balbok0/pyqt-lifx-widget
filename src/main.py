@@ -1,8 +1,8 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-from lights_panel import LightsPanel
+from main_panel import MainPanel
 
 
 app = QtWidgets.QApplication([])
-volume = LightsPanel()
+volume = MainPanel()
 volume.show()
 app.exec_()
